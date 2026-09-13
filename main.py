@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
+
+from src.core.database import get_db
+
+app = FastAPI(
+    title="Campus Knowledge Assistant",
+    description="Production-oriented RAG API for university knowledge.",
+    version="1.0.0",
+)
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+
+@app.get("/health/db")
+async def database_health_check(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(text("SELECT 1"))
+    
+    return {
+        "status": "healthy",
+        "database": result.scalar(),
+    }
