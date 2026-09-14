@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from pgvector.sqlalchemy import Vector
 from src.core.database import Base
+
 
 
 class Chunk(Base):
@@ -40,6 +41,11 @@ class Chunk(Base):
         String(100),
         nullable=True,
         index=True,
+    )
+
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(384),
+        nullable=True,
     )
 
     access_level: Mapped[str] = mapped_column(
