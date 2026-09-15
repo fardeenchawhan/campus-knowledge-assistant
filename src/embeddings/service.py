@@ -1,20 +1,24 @@
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-model = SentenceTransformer(MODEL_NAME)
+
+embedding_model = SentenceTransformer(
+    EMBEDDING_MODEL_NAME
+)
+
+reranker_model = CrossEncoder(
+    RERANKER_MODEL_NAME
+)
 
 
 def generate_embeddings(
     texts: list[str],
 ) -> list[list[float]]:
-    """
-    Generate 384-dimensional embeddings
-    for a list of texts.
-    """
 
-    embeddings = model.encode(
+    embeddings = embedding_model.encode(
         texts,
         batch_size=32,
         show_progress_bar=True,
@@ -22,3 +26,18 @@ def generate_embeddings(
     )
 
     return embeddings.tolist()
+
+
+def rerank(
+    query: str,
+    texts: list[str],
+) -> list[float]:
+
+    pairs = [
+        [query, text]
+        for text in texts
+    ]
+
+    scores = reranker_model.predict(pairs)
+
+    return scores.tolist()

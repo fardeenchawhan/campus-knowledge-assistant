@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from src.core.database import Base
-
+from sqlalchemy.dialects.postgresql import TSVECTOR
 
 
 class Chunk(Base):
@@ -48,6 +48,11 @@ class Chunk(Base):
         nullable=True,
     )
 
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        nullable=True,
+    )
+
     access_level: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
@@ -60,6 +65,7 @@ class Chunk(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
 
     document_version: Mapped["DocumentVersion"] = relationship(
         "DocumentVersion",
