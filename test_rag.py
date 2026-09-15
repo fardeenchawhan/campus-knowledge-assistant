@@ -8,7 +8,7 @@ from src.rag.service import answer_question
 async def main():
 
 
-    question = "What are the minimum qualifications for appointment of teachers?"
+    question = "What are the qualifications required for professor?"
 
     async with AsyncSessionLocal() as db:
 

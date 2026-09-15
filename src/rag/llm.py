@@ -24,7 +24,10 @@ Rules:
    the question, say:
    "I don't know based on the available university documents."
 5. Keep the answer clear and concise.
-6. Cite the sources using the source numbers provided in the context.
+6. Every factual claim must have a citation.
+7. Cite information using the source number provided in the context,
+   for example [Source 2].
+8. Do not create source numbers that are not provided.
 """
 
 

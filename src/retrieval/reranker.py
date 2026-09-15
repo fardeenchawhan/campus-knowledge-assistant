@@ -8,7 +8,7 @@ async def reranked_search(
     db: AsyncSession,
     query: str,
     top_k: int = 5,
-    candidate_k: int = 10,
+    candidate_k: int = 20,
 ):
     candidates = await hybrid_search(
         db=db,
@@ -20,31 +20,15 @@ async def reranked_search(
     if not candidates:
         return []
 
-    chunks = [
-        chunk
-        for chunk, _ in candidates
-    ]
-
-    texts = [
-        chunk.content
-        for chunk in chunks
-    ]
+    chunks = [chunk for chunk, _ in candidates]
+    texts = [chunk.content for chunk in chunks]
 
     reranker_scores = rerank(
         query=query,
         texts=texts,
     )
 
-    reranked = list(
-        zip(
-            chunks,
-            reranker_scores,
-        )
-    )
-
-    reranked.sort(
-        key=lambda item: item[1],
-        reverse=True,
-    )
+    reranked = list(zip(chunks, reranker_scores))
+    reranked.sort(key=lambda item: item[1], reverse=True)
 
     return reranked[:top_k]

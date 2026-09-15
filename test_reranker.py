@@ -8,7 +8,7 @@ from src.retrieval.reranker import reranked_search
 
 async def main():
 
-    query = "What are the minimum qualifications for appointment of teachers?"
+    query = "What qualifications are required for Professor?"
 
     async with AsyncSessionLocal() as db:
 

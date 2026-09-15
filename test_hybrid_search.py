@@ -8,15 +8,15 @@ from src.retrieval.hybrid_search import hybrid_search
 
 async def main():
 
-    query = "What are the minimum qualifications for appointment of teachers?"
+    query = "What qualifications are required for Associate Professor?"
 
     async with AsyncSessionLocal() as db:
 
         results = await hybrid_search(
             db=db,
             query=query,
-            top_k=5,
-            candidate_k=10,
+            top_k=10,
+            candidate_k=30,
         )
 
         print(f"\nQuery: {query}\n")

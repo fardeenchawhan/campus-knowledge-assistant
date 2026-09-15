@@ -1,10 +1,12 @@
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.chunks.models import Chunk
 from src.documents.models import Document, DocumentVersion
 from src.ingestion.chunker import chunk_markdown
+from src.ingestion.hash import calculate_file_hash
 
 
 async def ingest_document(
@@ -14,10 +16,8 @@ async def ingest_document(
     source: str,
     year: int,
 ) -> DocumentVersion:
-    """
-    Create a document, document version, and chunks
-    from an extracted Markdown document.
-    """
+
+    """Ingest a Markdown document with content-based versioning."""
 
     path = Path(markdown_path)
 
@@ -26,51 +26,95 @@ async def ingest_document(
             f"Markdown file not found: {markdown_path}"
         )
 
-    # --------------------------------------------------
-    # 1. Create the document
-    # --------------------------------------------------
+    # Calculate hash of the source file.
+    content_hash = calculate_file_hash(markdown_path)
 
-    document = Document(
-        title=title,
-        source=source,
+    # Check whether this document already exists.
+    result = await db.execute(
+        select(Document)
+        .where(Document.title == title)
     )
 
-    db.add(document)
+    document = result.scalar_one_or_none()
 
-    await db.flush()
+    # Create the document if this is the first version.
+    if document is None:
 
-    # --------------------------------------------------
-    # 2. Create the document version
-    # --------------------------------------------------
+        document = Document(
+            title=title,
+            source=source,
+        )
 
+        db.add(document)
+        await db.flush()
+
+    # Check whether this exact version already exists.
+    result = await db.execute(
+        select(DocumentVersion)
+        .where(
+            DocumentVersion.document_id == document.id,
+            DocumentVersion.content_hash == content_hash,
+        )
+    )
+
+    existing_version = result.scalar_one_or_none()
+
+    if existing_version is not None:
+        print(
+            f"Document already exists as version "
+            f"{existing_version.version_number}."
+        )
+
+        return existing_version
+
+    # Get the latest version number.
+    result = await db.execute(
+        select(DocumentVersion.version_number)
+        .where(
+            DocumentVersion.document_id == document.id
+        )
+        .order_by(DocumentVersion.version_number.desc())
+        .limit(1)
+    )
+
+    latest_version = result.scalar_one_or_none()
+
+    next_version = (
+        latest_version + 1
+        if latest_version is not None
+        else 1
+    )
+
+    # Mark previous versions as no longer current.
+    await db.execute(
+        DocumentVersion.__table__.update()
+        .where(
+            DocumentVersion.document_id == document.id
+        )
+        .values(is_current=False)
+    )
+
+    # Create the new version.
     document_version = DocumentVersion(
         document_id=document.id,
-        version_number=1,
+        version_number=next_version,
         file_name=path.name,
         file_path=str(path),
-        content_hash="temporary",
+        content_hash=content_hash,
         is_current=True,
     )
 
     db.add(document_version)
-
     await db.flush()
 
-    # --------------------------------------------------
-    # 3. Read extracted Markdown
-    # --------------------------------------------------
+    # Extract markdown text.
+    text = path.read_text(encoding="utf-8")
 
-    text = path.read_text(
-        encoding="utf-8"
-    )
-
-    # --------------------------------------------------
-    # 4. Create chunks
-    # --------------------------------------------------
-
+    # Create chunks.
     chunks = chunk_markdown(text)
 
     for chunk in chunks:
+
         db_chunk = Chunk(
             document_version_id=document_version.id,
             chunk_index=chunk.chunk_index,
@@ -82,12 +126,12 @@ async def ingest_document(
 
         db.add(db_chunk)
 
-    # --------------------------------------------------
-    # 5. Commit everything
-    # --------------------------------------------------
-
     await db.commit()
-
     await db.refresh(document_version)
+
+    print(
+        f"Created document version {next_version} "
+        f"with {len(chunks)} chunks."
+    )
 
     return document_version

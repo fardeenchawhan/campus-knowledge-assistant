@@ -8,7 +8,7 @@ from src.retrieval.reranker import reranked_search
 async def answer_question(
     db: AsyncSession,
     question: str,
-    top_k: int = 10,
+    top_k: int = 5,
 ) -> str:
 
     results = await reranked_search(
