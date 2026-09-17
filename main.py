@@ -2,16 +2,15 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
-
 from src.core.database import get_db
-
+from src.auth.router import router as auth_router
 app = FastAPI(
     title="Campus Knowledge Assistant",
     description="Production-oriented RAG API for university knowledge.",
     version="1.0.0",
 )
 
-
+app.include_router(auth_router)
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
