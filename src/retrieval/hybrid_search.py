@@ -3,11 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.retrieval.keyword_search import keyword_search
 from src.retrieval.vector_search import vector_search
-
+from src.auth.models import UserRole
 
 async def hybrid_search(
     db: AsyncSession,
     query: str,
+    role:UserRole,
     top_k: int = 20,
     candidate_k: int = 20,
 ) -> list[tuple[object, float]]:
@@ -20,6 +21,7 @@ async def hybrid_search(
     vector_results = await vector_search(
         db=db,
         query=query,
+        role=role,
         top_k=candidate_k,
     )
 
@@ -29,6 +31,7 @@ async def hybrid_search(
     keyword_results = await keyword_search(
         db=db,
         query=query,
+        role=role,
         top_k=candidate_k,
     )
 

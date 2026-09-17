@@ -8,6 +8,12 @@ from src.core.database import get_db
 from src.auth.schemas import LoginRequest, RegisterRequest, UserResponse
 from src.auth.jwt import create_access_token
 
+from src.auth.dependencies import get_current_user
+from src.auth.models import User
+
+from src.auth.rbac import require_roles
+from src.auth.models import User, UserRole
+
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"],
@@ -64,3 +70,10 @@ async def login(
         "access_token": access_token,
         "token_type": "bearer",
     }
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user

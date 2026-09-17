@@ -4,10 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.chunks.models import Chunk
 from sqlalchemy.orm import selectinload
 from src.documents.models import DocumentVersion
+from src.auth.models import UserRole
+from src.auth.rbac import get_allowed_access_levels
 
 async def keyword_search(
     db: AsyncSession,
     query: str,
+    role:UserRole,
     top_k: int = 20,
 ) -> list[tuple[Chunk, float]]:
 
@@ -20,6 +23,8 @@ async def keyword_search(
         Chunk.search_vector,
         ts_query,
     )
+
+    allowed_access_levels = get_allowed_access_levels(role)
 
     statement = (
         select(
@@ -37,6 +42,7 @@ async def keyword_search(
         .where(
             Chunk.search_vector.op("@@")(ts_query),
             DocumentVersion.is_current.is_(True),
+            Chunk.access_level.in_(allowed_access_levels)
         )
         .order_by(rank.desc())
         .limit(top_k)

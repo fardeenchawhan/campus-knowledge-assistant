@@ -2,17 +2,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.retrieval.hybrid_search import hybrid_search
 from src.embeddings.service import rerank
-
+from src.auth.models import UserRole
 
 async def reranked_search(
     db: AsyncSession,
     query: str,
+    role:UserRole,
     top_k: int = 5,
     candidate_k: int = 20,
 ):
     candidates = await hybrid_search(
         db=db,
         query=query,
+        role=role,
         top_k=candidate_k,
         candidate_k=candidate_k,
     )
