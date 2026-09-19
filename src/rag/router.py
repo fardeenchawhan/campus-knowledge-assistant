@@ -23,12 +23,13 @@ async def ask_question(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    answer = await answer_question(
+    result = await answer_question(
         db=db,
         question=request.question,
         role=current_user.role,
     )
 
     return AskResponse(
-        answer=answer,
+        answer=result['answer'],
+        sources=result["sources"],
     )

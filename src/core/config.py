@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY:str
     JWT_ALGORITHM:str
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES:int
+    ADMIN_NAME:str
+    ADMIN_EMAIL:str
+    ADMIN_PASSWORD:str
+
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

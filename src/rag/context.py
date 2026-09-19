@@ -1,8 +1,11 @@
 from src.chunks.models import Chunk
 
 
-def build_context(chunks: list[Chunk]) -> str:
+def build_context(
+    chunks: list[Chunk],
+) -> tuple[str, list[dict]]:
     context_parts = []
+    sources = []
 
     for index, chunk in enumerate(chunks, start=1):
         document_version = chunk.document_version
@@ -16,4 +19,13 @@ def build_context(chunks: list[Chunk]) -> str:
             f"Content:\n{chunk.content}"
         )
 
-    return "\n\n".join(context_parts)
+        sources.append(
+            {
+                "source_number": index,
+                "document": document.title,
+                "version": document_version.version_number,
+                "chunk_id": chunk.id,
+            }
+        )
+
+    return "\n\n".join(context_parts), sources

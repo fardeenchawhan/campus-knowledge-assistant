@@ -8,5 +8,13 @@ class AskRequest(BaseModel):
     )
 
 
+class SourceResponse(BaseModel):
+    source_number: int
+    document: str
+    version: int
+    chunk_id: int
+
+
 class AskResponse(BaseModel):
     answer: str
+    sources: list[SourceResponse]
