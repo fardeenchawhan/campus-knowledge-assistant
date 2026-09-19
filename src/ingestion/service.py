@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 from sqlalchemy import select
@@ -7,6 +8,7 @@ from src.chunks.models import Chunk
 from src.documents.models import Document, DocumentVersion
 from src.ingestion.chunker import chunk_markdown
 from src.ingestion.hash import calculate_file_hash
+from src.embeddings.service import generate_embeddings
 
 
 async def ingest_document(
@@ -17,8 +19,6 @@ async def ingest_document(
     year: int,
 ) -> DocumentVersion:
 
-    """Ingest a Markdown document with content-based versioning."""
-
     path = Path(markdown_path)
 
     if not path.exists():
@@ -26,10 +26,8 @@ async def ingest_document(
             f"Markdown file not found: {markdown_path}"
         )
 
-    # Calculate hash of the source file.
     content_hash = calculate_file_hash(markdown_path)
 
-    # Check whether this document already exists.
     result = await db.execute(
         select(Document)
         .where(Document.title == title)
@@ -37,9 +35,7 @@ async def ingest_document(
 
     document = result.scalar_one_or_none()
 
-    # Create the document if this is the first version.
     if document is None:
-
         document = Document(
             title=title,
             source=source,
@@ -48,7 +44,6 @@ async def ingest_document(
         db.add(document)
         await db.flush()
 
-    # Check whether this exact version already exists.
     result = await db.execute(
         select(DocumentVersion)
         .where(
@@ -60,20 +55,16 @@ async def ingest_document(
     existing_version = result.scalar_one_or_none()
 
     if existing_version is not None:
-        print(
-            f"Document already exists as version "
-            f"{existing_version.version_number}."
-        )
-
         return existing_version
 
-    # Get the latest version number.
     result = await db.execute(
         select(DocumentVersion.version_number)
         .where(
             DocumentVersion.document_id == document.id
         )
-        .order_by(DocumentVersion.version_number.desc())
+        .order_by(
+            DocumentVersion.version_number.desc()
+        )
         .limit(1)
     )
 
@@ -85,7 +76,6 @@ async def ingest_document(
         else 1
     )
 
-    # Mark previous versions as no longer current.
     await db.execute(
         DocumentVersion.__table__.update()
         .where(
@@ -94,7 +84,6 @@ async def ingest_document(
         .values(is_current=False)
     )
 
-    # Create the new version.
     document_version = DocumentVersion(
         document_id=document.id,
         version_number=next_version,
@@ -107,13 +96,19 @@ async def ingest_document(
     db.add(document_version)
     await db.flush()
 
-    # Extract markdown text.
     text = path.read_text(encoding="utf-8")
 
-    # Create chunks.
     chunks = chunk_markdown(text)
 
-    for chunk in chunks:
+    # Generate embeddings in one batch.
+    contents = [
+        chunk.content
+        for chunk in chunks
+    ]
+
+    embeddings = generate_embeddings(contents)
+
+    for chunk, embedding in zip(chunks, embeddings):
 
         db_chunk = Chunk(
             document_version_id=document_version.id,
@@ -122,6 +117,7 @@ async def ingest_document(
             year=year,
             department=None,
             access_level="student",
+            embedding=embedding,
         )
 
         db.add(db_chunk)
