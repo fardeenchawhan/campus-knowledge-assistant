@@ -12,8 +12,12 @@ class Settings(BaseSettings):
     ADMIN_EMAIL:str
     ADMIN_PASSWORD:str
 
-    DOCUMENT_UPLOAD_DIR: str = "data/documents"
-    DOCUMENT_EXTRACTED_DIR: str = "data/extracted"
+    DOCUMENT_UPLOAD_DIR: str
+    DOCUMENT_EXTRACTED_DIR:str
+
+    REDIS_URL: str
+
+    MAX_UPLOAD_SIZE_MB: int
 
 
 

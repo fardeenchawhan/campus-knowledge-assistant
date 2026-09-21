@@ -1,7 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+
     <title>Campus Knowledge Assistant - Admin</title>
 
     <meta
@@ -18,124 +21,390 @@
 <body class="bg-light">
 
 <nav class="navbar navbar-dark bg-dark">
+
     <div class="container">
+
         <span class="navbar-brand">
             Campus Knowledge Assistant
         </span>
 
-        <span class="text-white">
-            Admin Dashboard
-        </span>
+        <div class="d-flex align-items-center gap-3">
+
+            <span class="text-white">
+                Admin Dashboard
+            </span>
+
+            <button
+                id="logout-button"
+                class="btn btn-outline-light btn-sm d-none"
+            >
+                Logout
+            </button>
+
+        </div>
+
     </div>
+
 </nav>
+
 
 <div class="container py-5">
 
-    <h2 class="mb-4">Dashboard</h2>
 
-    <div class="row g-4">
+    <!-- LOGIN SECTION -->
 
-        <div class="col-md-3">
+    <div
+        id="login-section"
+        class="row justify-content-center"
+    >
+
+        <div class="col-md-6 col-lg-5">
+
             <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6>Documents</h6>
-                    <h2 id="documents">-</h2>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6>Total Users</h6>
-                    <h2 id="users">-</h2>
-                </div>
-            </div>
-        </div>
+                <div class="card-body p-4">
 
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6>Professors</h6>
-                    <h2 id="professors">-</h2>
-                </div>
-            </div>
-        </div>
+                    <h3 class="mb-4 text-center">
+                        Admin Login
+                    </h3>
 
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6>Active Users</h6>
-                    <h2 id="active-users">-</h2>
+                    <form id="login-form">
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Email
+                            </label>
+
+                            <input
+                                type="email"
+                                class="form-control"
+                                name="email"
+                                placeholder="admin@campus.local"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Password
+                            </label>
+
+                            <input
+                                type="password"
+                                class="form-control"
+                                name="password"
+                                required
+                            >
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                        >
+                            Login
+                        </button>
+
+                    </form>
+
+
+                    <div
+                        id="login-message"
+                        class="mt-3"
+                    ></div>
+
                 </div>
+
             </div>
+
         </div>
 
     </div>
 
-    <div class="card shadow-sm mt-5">
 
-        <div class="card-header">
-            Upload University Document
+    <!-- DASHBOARD -->
+
+    <div
+        id="dashboard-section"
+        class="d-none"
+    >
+
+        <h2 class="mb-4">
+            Dashboard
+        </h2>
+
+
+        <!-- STATISTICS -->
+
+        <div class="row g-4">
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-body">
+
+                        <h6>
+                            Documents
+                        </h6>
+
+                        <h2 id="documents">
+                            -
+                        </h2>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-body">
+
+                        <h6>
+                            Total Users
+                        </h6>
+
+                        <h2 id="users">
+                            -
+                        </h2>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-body">
+
+                        <h6>
+                            Professors
+                        </h6>
+
+                        <h2 id="professors">
+                            -
+                        </h2>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-body">
+
+                        <h6>
+                            Active Users
+                        </h6>
+
+                        <h2 id="active-users">
+                            -
+                        </h2>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="card-body">
 
-            <form id="upload-form">
+        <!-- UPLOAD -->
 
-                <div class="mb-3">
-                    <label class="form-label">
-                        Document title
-                    </label>
+        <div class="card shadow-sm mt-5">
 
-                    <input
-                        type="text"
-                        class="form-control"
-                        name="title"
-                        required
+            <div class="card-header">
+
+                <strong>
+                    Upload University Document
+                </strong>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <form id="upload-form">
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Document title
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            name="title"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label for="documentKey" class="form-label">
+                            Document Key
+                        </label>
+                            <input
+                                type="text"
+                                id="documentKey"
+                                name="document_key"
+                                placeholder="e.g. UGC-REGULATIONS"
+                                required
+                            />
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Year
+                        </label>
+
+                        <input
+                            type="number"
+                            class="form-control"
+                            name="year"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Access level
+                        </label>
+
+                        <select
+                            class="form-select"
+                            name="access_level"
+                            required
+                        >
+
+                            <option value="student">
+                                Student
+                            </option>
+
+                            <option value="professor">
+                                Professor
+                            </option>
+
+                            <option value="admin">
+                                Admin
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Document
+                        </label>
+
+                        <input
+                            type="file"
+                            class="form-control"
+                            name="file"
+                            accept=".pdf,.docx,.pptx,.xlsx,.html,.htm,.md,.txt"
+                            required
+                        >
+
+                        <div class="form-text">
+
+                            Supported:
+                            PDF, DOCX, PPTX, XLSX,
+                            HTML, Markdown and TXT.
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        id="upload-button"
+                        type="submit"
+                        class="btn btn-primary"
                     >
-                </div>
+                        Upload Document
+                    </button>
 
-                <div class="mb-3">
-                    <label class="form-label">
-                        Year
-                    </label>
+                </form>
 
-                    <input
-                        type="number"
-                        class="form-control"
-                        name="year"
-                        required
-                    >
-                </div>
 
-                <div class="mb-3">
-                    <label class="form-label">
-                        PDF
-                    </label>
+                <div
+                    id="message"
+                    class="mt-3"
+                ></div>
 
-                    <input
-                        type="file"
-                        class="form-control"
-                        name="file"
-                        accept=".pdf"
-                        required
-                    >
-                </div>
 
-                <button
-                    type="submit"
-                    class="btn btn-primary"
+                <div
+                    id="job-status"
+                    class="mt-3 d-none"
                 >
-                    Upload Document
-                </button>
 
-            </form>
+                    <div class="card bg-light">
 
-            <div
-                id="message"
-                class="mt-3"
-            ></div>
+                        <div class="card-body">
+
+                            <h6>
+                                Processing status
+                            </h6>
+
+                            <p
+                                id="job-message"
+                                class="mb-2"
+                            >
+                                Waiting...
+                            </p>
+
+
+                            <div class="progress">
+
+                                <div
+                                    id="job-progress"
+                                    class="progress-bar progress-bar-striped progress-bar-animated"
+                                    role="progressbar"
+                                    style="width: 0%"
+                                >
+                                    0%
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -143,50 +412,261 @@
 
 </div>
 
+
 <script>
+
+
+const loginSection =
+    document.getElementById(
+        "login-section"
+    );
+
+const dashboardSection =
+    document.getElementById(
+        "dashboard-section"
+    );
+
+const logoutButton =
+    document.getElementById(
+        "logout-button"
+    );
+
+
+
+function getToken() {
+
+    return localStorage.getItem(
+        "access_token"
+    );
+
+}
+
+
+
+function showDashboard() {
+
+    loginSection.classList.add(
+        "d-none"
+    );
+
+    dashboardSection.classList.remove(
+        "d-none"
+    );
+
+    logoutButton.classList.remove(
+        "d-none"
+    );
+
+}
+
+
+
+function showLogin() {
+
+    loginSection.classList.remove(
+        "d-none"
+    );
+
+    dashboardSection.classList.add(
+        "d-none"
+    );
+
+    logoutButton.classList.add(
+        "d-none"
+    );
+
+}
+
+
+
+async function login(email, password) {
+
+    const response =
+        await fetch(
+            "/auth/login",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            }
+        );
+
+
+    const data =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.detail ||
+            "Login failed."
+        );
+
+    }
+
+
+    localStorage.setItem(
+        "access_token",
+        data.access_token
+    );
+
+}
+
+
 
 async function loadDashboard() {
 
-    // const token = localStorage.getItem("access_token");
+    const token =
+        getToken();
 
-    // if (!token) {
-    //     window.location.href = "/docs";
-    //     return;
-    // }
 
-    const response = await fetch(
-        "/admin/dashboard",
-        {
-            headers: {
-                "Authorization":
-                    `Bearer ${token}`
-            }
-        }
-    );
+    if (!token) {
 
-    if (!response.ok) {
-        alert("Admin authentication required.");
+        showLogin();
+
         return;
+
     }
 
-    const data = await response.json();
+
+    const response =
+        await fetch(
+            "/admin/dashboard",
+            {
+                headers: {
+                    "Authorization":
+                        `Bearer ${token}`
+                }
+            }
+        );
+
+
+    if (
+        response.status === 401 ||
+        response.status === 403
+    ) {
+
+        localStorage.removeItem(
+            "access_token"
+        );
+
+        showLogin();
+
+        return;
+
+    }
+
+
+    if (!response.ok) {
+
+        alert(
+            "Unable to load admin dashboard."
+        );
+
+        return;
+
+    }
+
+
+    const data =
+        await response.json();
+
 
     document.getElementById(
         "documents"
-    ).textContent = data.documents;
+    ).textContent =
+        data.documents;
+
 
     document.getElementById(
         "users"
-    ).textContent = data.users;
+    ).textContent =
+        data.users;
+
 
     document.getElementById(
         "professors"
-    ).textContent = data.professors;
+    ).textContent =
+        data.professors;
+
 
     document.getElementById(
         "active-users"
-    ).textContent = data.active_users;
+    ).textContent =
+        data.active_users;
+
+
+    showDashboard();
+
 }
+
+
+
+document.getElementById(
+    "login-form"
+).addEventListener(
+    "submit",
+    async function(event) {
+
+        event.preventDefault();
+
+
+        const formData =
+            new FormData(this);
+
+
+        const email =
+            formData.get("email");
+
+
+        const password =
+            formData.get("password");
+
+
+        const message =
+            document.getElementById(
+                "login-message"
+            );
+
+
+        try {
+
+            await login(
+                email,
+                password
+            );
+
+
+            message.innerHTML =
+                `<div class="alert alert-success">
+                    Login successful.
+                </div>`;
+
+
+            await loadDashboard();
+
+
+        } catch (error) {
+
+            message.innerHTML =
+                `<div class="alert alert-danger">
+                    ${error.message}
+                </div>`;
+
+        }
+
+    }
+);
+
 
 
 document.getElementById(
@@ -197,55 +677,294 @@ document.getElementById(
 
         event.preventDefault();
 
+
         const token =
-            localStorage.getItem(
-                "access_token"
+            getToken();
+
+
+        if (!token) {
+
+            showLogin();
+
+            return;
+
+        }
+
+
+        const button =
+            document.getElementById(
+                "upload-button"
             );
 
-        const formData =
-            new FormData(this);
-
-        const response = await fetch(
-            "/admin/documents/upload",
-            {
-                method: "POST",
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`
-                },
-                body: formData
-            }
-        );
-
-        const data =
-            await response.json();
 
         const message =
             document.getElementById(
                 "message"
             );
 
-        if (response.ok) {
+
+        const formData =
+            new FormData(this);
+
+
+        button.disabled = true;
+
+        button.textContent =
+            "Uploading...";
+
+
+        message.innerHTML = "";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/admin/documents/upload",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Authorization":
+                                `Bearer ${token}`
+                        },
+
+                        body: formData
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                localStorage.removeItem(
+                    "access_token"
+                );
+
+                showLogin();
+
+                return;
+
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.detail ||
+                    "Upload failed."
+                );
+
+            }
+
 
             message.innerHTML =
                 `<div class="alert alert-success">
                     ${data.message}
-                    Version ${data.version} created.
+                    <br>
+                    Job ID:
+                    <code>${data.job_id}</code>
                 </div>`;
+
 
             this.reset();
 
-        } else {
+
+            if (data.job_id) {
+
+                monitorJob(
+                    data.job_id
+                );
+
+            }
+
+
+        } catch (error) {
 
             message.innerHTML =
                 `<div class="alert alert-danger">
-                    ${data.detail || "Upload failed."}
+                    ${error.message}
                 </div>`;
+
+        } finally {
+
+            button.disabled = false;
+
+            button.textContent =
+                "Upload Document";
+
         }
+
     }
 );
 
+
+
+async function monitorJob(jobId) {
+
+    const statusBox =
+        document.getElementById(
+            "job-status"
+        );
+
+    const statusMessage =
+        document.getElementById(
+            "job-message"
+        );
+
+    const progressBar =
+        document.getElementById(
+            "job-progress"
+        );
+
+
+    statusBox.classList.remove(
+        "d-none"
+    );
+
+
+    async function checkStatus() {
+
+        const token =
+            getToken();
+
+
+        if (!token) {
+
+            return;
+
+        }
+
+
+        const response =
+            await fetch(
+                `/admin/documents/jobs/${jobId}`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+
+        if (!response.ok) {
+
+            statusMessage.textContent =
+                "Unable to check job status.";
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        const progress =
+            data.progress || 0;
+
+
+        progressBar.style.width =
+            `${progress}%`;
+
+
+        progressBar.textContent =
+            `${progress}%`;
+
+
+        statusMessage.textContent =
+            data.message ||
+            data.status;
+
+
+        if (
+            data.status ===
+            "completed"
+        ) {
+
+            progressBar.classList.remove(
+                "progress-bar-animated"
+            );
+
+
+            progressBar.classList.add(
+                "bg-success"
+            );
+
+
+            statusMessage.textContent =
+                "Document processing completed.";
+
+            loadDashboard();
+
+            return;
+
+        }
+
+
+        if (
+            data.status ===
+            "failed"
+        ) {
+
+            progressBar.classList.remove(
+                "progress-bar-animated"
+            );
+
+
+            progressBar.classList.add(
+                "bg-danger"
+            );
+
+
+            statusMessage.textContent =
+                data.message ||
+                "Document processing failed.";
+
+            return;
+
+        }
+
+
+        setTimeout(
+            checkStatus,
+            2000
+        );
+
+    }
+
+
+    checkStatus();
+
+}
+
+
+
+logoutButton.addEventListener(
+    "click",
+    function() {
+
+        localStorage.removeItem(
+            "access_token"
+        );
+
+        showLogin();
+
+    }
+);
+
+
+
 loadDashboard();
+
 
 </script>
 

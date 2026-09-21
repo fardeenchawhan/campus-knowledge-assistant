@@ -3,12 +3,19 @@ from uuid import uuid4
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
     HTTPException,
     UploadFile,
     status,
+)
+
+from src.admin.jobs import (
+    get_job,
+    process_document_job,
+    update_job,
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +28,16 @@ from src.documents.models import Document, DocumentVersion
 from src.ingestion.parser import extract_and_save
 from src.ingestion.service import ingest_document
 
+SUPPORTED_UPLOAD_EXTENSIONS = {
+    ".pdf",
+    ".docx",
+    ".pptx",
+    ".xlsx",
+    ".html",
+    ".htm",
+    ".md",
+    ".txt",
+}
 
 router = APIRouter(
     prefix="/admin",
@@ -132,16 +149,18 @@ async def admin_page():
 
 @router.post(
     "/documents/upload",
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form(...),
     year: int = Form(...),
+    document_key: str = Form(...),
+    access_level: str = Form("student"),
     current_user: User = Depends(
         require_roles(UserRole.ADMIN)
     ),
-    db: AsyncSession = Depends(get_db),
 ):
     if not file.filename:
         raise HTTPException(
@@ -149,13 +168,58 @@ async def upload_document(
             detail="File name is required.",
         )
 
-    extension = Path(file.filename).suffix.lower()
+    document_key = document_key.strip()
 
-    if extension != ".pdf":
+    if not document_key:
         raise HTTPException(
             status_code=400,
-            detail="Only PDF files are supported.",
+            detail="Document key is required.",
         )
+
+
+    # Prevent paths such as:
+    # ../../something.pdf
+    original_filename = Path(
+        file.filename
+    ).name
+
+
+    extension = Path(
+        original_filename
+    ).suffix.lower()
+
+
+    if extension not in SUPPORTED_UPLOAD_EXTENSIONS:
+        supported = ", ".join(
+            sorted(SUPPORTED_UPLOAD_EXTENSIONS)
+        )
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file type: {extension}. "
+                f"Supported types: {supported}"
+            ),
+        )
+
+
+    if access_level not in {
+        "student",
+        "professor",
+        "admin",
+    }:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid access level.",
+        )
+
+
+    if year < 1900 or year > 2100:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid document year.",
+        )
+
 
     upload_dir = Path(
         settings.DOCUMENT_UPLOAD_DIR
@@ -164,6 +228,7 @@ async def upload_document(
     extracted_dir = Path(
         settings.DOCUMENT_EXTRACTED_DIR
     )
+
 
     upload_dir.mkdir(
         parents=True,
@@ -175,50 +240,136 @@ async def upload_document(
         exist_ok=True,
     )
 
-    unique_name = (
-        f"{uuid4().hex}_{file.filename}"
+
+    job_id = uuid4().hex
+
+
+    saved_filename = (
+        f"{job_id}_{original_filename}"
     )
 
-    pdf_path = upload_dir / unique_name
+    file_path = (
+        upload_dir / saved_filename
+    )
 
-    with pdf_path.open("wb") as output:
-        while chunk := await file.read(1024 * 1024):
-            output.write(chunk)
 
     markdown_path = (
         extracted_dir
-        / f"{pdf_path.stem}.md"
+        / f"{job_id}.md"
     )
 
-    try:
-        extract_and_save(
-            file_path=str(pdf_path),
-            output_path=str(markdown_path),
-        )
 
-        document_version = await ingest_document(
-            db=db,
-            markdown_path=str(markdown_path),
-            title=title,
-            source=str(pdf_path),
-            year=year,
-        )
+    max_size = (
+        settings.MAX_UPLOAD_SIZE_MB
+        * 1024
+        * 1024
+    )
+
+
+    bytes_written = 0
+
+
+    try:
+
+        with file_path.open("wb") as output:
+
+            while True:
+
+                chunk = await file.read(
+                    1024 * 1024
+                )
+
+                if not chunk:
+                    break
+
+
+                bytes_written += len(chunk)
+
+
+                if bytes_written > max_size:
+
+                    output.close()
+
+                    if file_path.exists():
+                        file_path.unlink()
+
+                    raise HTTPException(
+                        status_code=413,
+                        detail=(
+                            f"File is too large. "
+                            f"Maximum size is "
+                            f"{settings.MAX_UPLOAD_SIZE_MB} MB."
+                        ),
+                    )
+
+
+                output.write(chunk)
+
+
+    except HTTPException:
+        raise
 
     except Exception as exc:
-        if pdf_path.exists():
-            pdf_path.unlink()
 
-        if markdown_path.exists():
-            markdown_path.unlink()
+        if file_path.exists():
+            file_path.unlink()
 
         raise HTTPException(
             status_code=500,
-            detail=f"Document processing failed: {exc}",
+            detail=(
+                f"Failed to save uploaded file: "
+                f"{exc}"
+            ),
         )
 
+
+    await update_job(
+        job_id,
+        status="queued",
+        progress=0,
+        message="Document uploaded. Waiting for processing...",
+        filename=original_filename,
+        title=title,
+        document_key=document_key,
+    )
+
+
+    background_tasks.add_task(
+        process_document_job,
+        job_id=job_id,
+        file_path=str(file_path),
+        markdown_path=str(markdown_path),
+        title=title,
+        document_key=document_key,
+        year=year,
+        access_level=access_level,
+        original_filename=original_filename,
+    )
+
+
     return {
-        "message": "Document uploaded successfully.",
-        "document_id": document_version.document_id,
-        "version": document_version.version_number,
-        "file_name": document_version.file_name,
+        "message": "Document uploaded and processing started.",
+        "job_id": job_id,
+        "status": "queued",
+        "filename": original_filename,
     }
+
+
+@router.get(
+    "/documents/jobs/{job_id}"
+)
+async def document_job_status(
+    job_id: str,
+    current_user: User = Depends(
+        require_roles(UserRole.ADMIN)
+    ),
+):
+    job = await get_job(job_id)
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document processing job not found.",
+        )
+
+    return job

@@ -14,6 +14,13 @@ class Document(Base):
         index=True,
     )
 
+    document_key: Mapped[str] = mapped_column(
+        String(150),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+
     title: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
