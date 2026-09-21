@@ -12,6 +12,9 @@ from fastapi import (
     status,
 )
 
+from src.admin.schemas import DocumentAdminResponse
+from src.auth.schemas import CreateProfessorRequest, UserResponse
+from src.auth.security import hash_password
 from src.admin.jobs import (
     get_job,
     process_document_job,
@@ -81,7 +84,7 @@ async def dashboard(
     }
 
 
-@router.get("/documents")
+@router.get("/documents",response_model=list[DocumentAdminResponse])
 async def list_documents(
     current_user: User = Depends(
         require_roles(UserRole.ADMIN)
@@ -122,6 +125,7 @@ async def list_documents(
                     if current_version
                     else None
                 ),
+                "document_key":document.document_key,
                 "created_at": document.created_at,
                 "updated_at": document.updated_at,
             }
@@ -353,6 +357,97 @@ async def upload_document(
         "status": "queued",
         "filename": original_filename,
     }
+
+@router.post(
+    "/professors",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_professor(
+    request: CreateProfessorRequest,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    existing_user = await db.execute(
+        select(User).where(User.email == request.email)
+    )
+
+    if existing_user.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already registered.",
+        )
+
+    professor = User(
+        name=request.name,
+        email=request.email,
+        hashed_password=hash_password(request.password),
+        role=UserRole.PROFESSOR,
+        is_active=True,
+    )
+
+    db.add(professor)
+    await db.commit()
+    await db.refresh(professor)
+
+    return professor
+
+@router.delete("/documents/{document_id}")
+async def delete_document(
+    document_id: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Document)
+        .where(Document.id == document_id)
+    )
+
+    document = result.scalar_one_or_none()
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    version_result = await db.execute(
+        select(DocumentVersion)
+        .where(DocumentVersion.document_id == document.id)
+    )
+
+    versions = version_result.scalars().all()
+
+    files_to_delete = set()
+
+    for version in versions:
+        if version.file_path:
+            files_to_delete.add(version.file_path)
+
+        if version.file_name:
+            extracted_path = (
+                Path(settings.DOCUMENT_EXTRACTED_DIR)
+                / version.file_name
+            )
+            files_to_delete.add(str(extracted_path))
+
+    await db.delete(document)
+    await db.commit()
+
+    for file_path in files_to_delete:
+        path = Path(file_path)
+
+        if path.exists() and path.is_file():
+            try:
+                path.unlink()
+            except OSError as exc:
+                print(f"Could not delete file {path}: {exc}")
+
+    return {
+        "message": "Document deleted successfully.",
+        "document_id": document_id,
+    }
+
 
 
 @router.get(
