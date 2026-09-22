@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.schemas import RegisterRequest, UserResponse
+from src.auth.security import hash_password, verify_password
+from src.auth.schemas import ChangePasswordRequest, RegisterRequest, UpdateProfileRequest, UserResponse
 from src.auth.service import authenticate_user, register_student
 from src.core.database import get_db
 
@@ -77,3 +78,49 @@ async def get_me(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
+
+
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    request: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user.name = request.name
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    return current_user
+
+
+@router.patch("/me/password")
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(
+        request.current_password,
+        current_user.hashed_password,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    if request.current_password == request.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password.",
+        )
+
+    current_user.hashed_password = hash_password(request.new_password)
+
+    await db.commit()
+
+    return {
+        "message": "Password updated successfully."
+    }

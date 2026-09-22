@@ -83,6 +83,11 @@ class DocumentVersion(Base):
         nullable=False,
     )
 
+    extracted_file_path: Mapped[str] = mapped_column(
+    String(500),
+    nullable=False,
+    )
+
     content_hash: Mapped[str] = mapped_column(
         String(64),
         nullable=False,

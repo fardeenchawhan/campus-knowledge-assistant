@@ -136,6 +136,7 @@ async def ingest_document(
         version_number=next_version,
         file_name=source_file_name or path.name,
         file_path=source,
+        extracted_file_path=markdown_path,
         content_hash=content_hash,
         is_current=True,
     )

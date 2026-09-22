@@ -12,4 +12,4 @@ __pycache__/
 .vscode/
 
 data/documents/
-data/extracted
+data/extracted/

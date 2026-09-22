@@ -11,6 +11,11 @@ from fastapi import (
     UploadFile,
     status,
 )
+from src.auth.schemas import (
+    CreateProfessorRequest,
+    UpdateUserStatusRequest,
+    UserResponse,
+)
 
 from src.admin.schemas import DocumentAdminResponse
 from src.auth.schemas import CreateProfessorRequest, UserResponse
@@ -399,8 +404,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Document)
-        .where(Document.id == document_id)
+        select(Document).where(Document.id == document_id)
     )
 
     document = result.scalar_one_or_none()
@@ -412,39 +416,33 @@ async def delete_document(
         )
 
     version_result = await db.execute(
-        select(DocumentVersion)
-        .where(DocumentVersion.document_id == document.id)
+        select(DocumentVersion).where(
+            DocumentVersion.document_id == document.id
+        )
     )
 
     versions = version_result.scalars().all()
 
-    files_to_delete = set()
-
+    # Delete physical files
     for version in versions:
-        if version.file_path:
-            files_to_delete.add(version.file_path)
+        original_path = Path(version.file_path)
 
-        if version.file_name:
-            extracted_path = (
-                Path(settings.DOCUMENT_EXTRACTED_DIR)
-                / version.file_name
-            )
-            files_to_delete.add(str(extracted_path))
+        if original_path.is_file():
+            original_path.unlink()
 
+        if version.extracted_file_path:
+            extracted_path = Path(version.extracted_file_path)
+
+            if extracted_path.is_file():
+                extracted_path.unlink()
+
+    # Delete database record.
+    # Versions and chunks are removed through the relationship cascade.
     await db.delete(document)
     await db.commit()
 
-    for file_path in files_to_delete:
-        path = Path(file_path)
-
-        if path.exists() and path.is_file():
-            try:
-                path.unlink()
-            except OSError as exc:
-                print(f"Could not delete file {path}: {exc}")
-
     return {
-        "message": "Document deleted successfully.",
+        "message": "Document and associated files deleted successfully.",
         "document_id": document_id,
     }
 
@@ -468,3 +466,118 @@ async def document_job_status(
         )
 
     return job
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_users(
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(User).order_by(User.id.desc())
+    )
+
+    return result.scalars().all()
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own admin account.",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    # Prevent deleting the last active admin.
+    if user.role == UserRole.ADMIN and user.is_active:
+        admin_result = await db.execute(
+            select(User).where(
+                User.role == UserRole.ADMIN,
+                User.is_active.is_(True),
+            )
+        )
+
+        active_admins = admin_result.scalars().all()
+
+        if len(active_admins) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete the last active admin.",
+            )
+
+    await db.delete(user)
+    await db.commit()
+
+    return {
+        "message": "User deleted successfully.",
+        "user_id": user_id,
+    }
+
+
+@router.patch("/users/{user_id}/status",response_model=UserResponse)
+async def update_user_status(
+    user_id: int,
+    request: UpdateUserStatusRequest,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == current_user.id and not request.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own admin account.",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    if (
+        user.role == UserRole.ADMIN
+        and user.is_active
+        and not request.is_active
+    ):
+        admin_result = await db.execute(
+            select(User).where(
+                User.role == UserRole.ADMIN,
+                User.is_active.is_(True),
+            )
+        )
+
+        active_admins = admin_result.scalars().all()
+
+        if len(active_admins) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot deactivate the last active admin.",
+            )
+
+    user.is_active = request.is_active
+
+    await db.commit()
+    await db.refresh(user)
+
+    return user
