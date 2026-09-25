@@ -25,6 +25,7 @@ from src.admin.jobs import (
     process_document_job,
     update_job,
 )
+from src.core.rate_limit import UPLOAD_LIMITER
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import HTMLResponse
@@ -171,6 +172,11 @@ async def upload_document(
         require_roles(UserRole.ADMIN)
     ),
 ):
+
+    await UPLOAD_LIMITER.check(
+    f"upload:user:{current_user.id}"
+    )
+    
     if not file.filename:
         raise HTTPException(
             status_code=400,

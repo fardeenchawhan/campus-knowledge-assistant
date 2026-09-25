@@ -11,6 +11,9 @@ from src.ingestion.chunker import chunk_markdown
 from src.ingestion.hash import calculate_file_hash
 import asyncio
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 EMBEDDING_BATCH_SIZE = 32
 
@@ -207,7 +210,7 @@ async def ingest_document(
     )
 
 
-    print(
+    logger.info(
         f"Created document version "
         f"{next_version} with "
         f"{len(chunks)} chunks."

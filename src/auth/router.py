@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import Request
 from src.auth.security import hash_password, verify_password
 from src.auth.schemas import ChangePasswordRequest, RegisterRequest, UpdateProfileRequest, UserResponse
 from src.auth.service import authenticate_user, register_student
 from src.core.database import get_db
-
+from src.core.rate_limit import LOGIN_LIMITER, REGISTER_LIMITER, get_client_ip
 from src.auth.schemas import LoginRequest, RegisterRequest, UserResponse
 from src.auth.jwt import create_access_token
 
@@ -27,9 +27,15 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
+    ip_request: Request,
     request: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
+
+    await REGISTER_LIMITER.check(
+    f"register:ip:{get_client_ip(ip_request)}"
+    )
+
     try:
         user = await register_student(
             db=db,
@@ -50,9 +56,15 @@ async def register(
 
 @router.post("/login")
 async def login(
+    ip_request: Request,
     request: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
+
+    await LOGIN_LIMITER.check(
+    f"login:ip:{get_client_ip(ip_request)}"
+    )
+
     user = await authenticate_user(
         db=db,
         email=request.email,

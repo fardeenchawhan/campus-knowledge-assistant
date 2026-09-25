@@ -1,12 +1,14 @@
 import asyncio
 import json
 from pathlib import Path
-
+import logging
 from src.core.database import AsyncSessionLocal
 from src.core.redis import redis_client
 from src.ingestion.parser import extract_and_save
 from src.ingestion.service import ingest_document
 from src.ingestion.hash import calculate_file_hash
+
+logger = logging.getLogger(__name__)
 
 JOB_TTL = 24 * 60 * 60
 
@@ -126,6 +128,6 @@ async def process_document_job(
 
         # Keep the original exception visible in the
         # server logs for debugging.
-        print(
+        logger.info(
             f"Document job {job_id} failed: {exc}"
         )

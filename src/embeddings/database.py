@@ -3,7 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.chunks.models import Chunk
 from src.embeddings.service import generate_embeddings
+import logging
 
+logger = logging.getLogger(__name__)
 
 async def embed_chunks(
     db: AsyncSession,
@@ -23,12 +25,11 @@ async def embed_chunks(
     chunks = result.scalars().all()
 
     if not chunks:
-        print("No chunks need embeddings.")
         return 0
 
     total = len(chunks)
 
-    print(f"Generating embeddings for {total} chunks...")
+    logger.info(f"Generating embeddings for {total} chunks...")
 
     for start in range(0, total, batch_size):
         batch = chunks[start:start + batch_size]
@@ -48,9 +49,5 @@ async def embed_chunks(
 
         await db.commit()
 
-        print(
-            f"Embedded {min(start + batch_size, total)}"
-            f"/{total} chunks"
-        )
 
     return total
