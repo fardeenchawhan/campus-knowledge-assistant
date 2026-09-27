@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-
+from src.core.redis import redis_client
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
@@ -70,8 +70,19 @@ async def db(
 
 
 @pytest_asyncio.fixture
+async def clean_redis():
+    await redis_client.flushdb()
+
+    yield
+
+    await redis_client.flushdb()
+    await redis_client.connection_pool.disconnect()
+
+
+@pytest_asyncio.fixture
 async def client(
     clean_database,
+    clean_redis,
     test_session_factory,
     monkeypatch,
 ):
@@ -103,3 +114,5 @@ async def client(
             yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
