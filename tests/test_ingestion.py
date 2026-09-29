@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.ingestion.chunker import chunk_markdown
 from src.documents.models import DocumentVersion
 from src.ingestion.service import ingest_document
 
@@ -11,10 +12,14 @@ def make_fake_chunks():
         SimpleNamespace(
             chunk_index=0,
             content="University admission policy.",
+            section=None,
+            page_number=None,
         ),
         SimpleNamespace(
             chunk_index=1,
             content="Students must submit the required documents.",
+            section=None,
+            page_number=None,
         ),
     ]
 
@@ -177,3 +182,37 @@ async def test_new_version_marks_previous_version_not_current(
 
     assert first_version.is_current is False
     assert second_version.is_current is True
+
+
+
+
+def test_chunk_markdown_preserves_page_and_section():
+    text = """## Eligibility
+
+Students must complete one semester before applying.
+
+<!-- PAGE_BREAK -->
+
+3.4 A minimum academic score of 65 percent is required.
+"""
+
+    chunks = chunk_markdown(text)
+
+    assert len(chunks) == 2
+
+    assert chunks[0].page_number == 1
+    assert chunks[0].section == "Eligibility"
+
+    assert chunks[1].page_number == 2
+    assert chunks[1].section == "3.4"
+
+def test_plain_markdown_has_no_page_number():
+    text = """## Eligibility
+        Students must complete one semester before applying.
+        """
+
+    chunks = chunk_markdown(text)
+
+    assert len(chunks) == 1
+    assert chunks[0].page_number is None
+    assert chunks[0].section == "Eligibility"

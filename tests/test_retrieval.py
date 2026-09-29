@@ -533,3 +533,4 @@ async def test_vector_search_returns_empty_when_no_embeddings(
     )
 
     assert results == []
+

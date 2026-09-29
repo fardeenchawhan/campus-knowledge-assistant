@@ -49,9 +49,11 @@ async def login(client: AsyncClient, email: str, password: str) -> str:
 def make_fake_chunk(
     *,
     chunk_id: int = 1,
-    content: str = "Students must submit the application before the deadline.",
-    document_title: str = "Student Policy",
+    content: str = "...",
+    document_title: str = "...",
     version_number: int = 1,
+    page_number: int | None = 1,
+    section: str | None = "Test Section",
 ):
     document = SimpleNamespace(
         title=document_title,
@@ -65,6 +67,8 @@ def make_fake_chunk(
     chunk = SimpleNamespace(
         id=chunk_id,
         content=content,
+        section=section,
+        page_number=page_number,
         document_version=document_version,
     )
 
@@ -198,6 +202,8 @@ async def test_rag_returns_answer(
             "source_number": 1,
             "document": "Attendance Policy",
             "version": 1,
+            "page":1,
+            "section":"Test Section",
             "chunk_id": 1,
         }
     ]
@@ -276,6 +282,8 @@ async def test_invalid_citation_is_removed(
             "source_number": 1,
             "document": "Scholarship Policy",
             "version": 2,
+            "page":1,
+            "section":"Test Section",
             "chunk_id": 10,
         }
     ]
@@ -450,3 +458,6 @@ async def test_rag_cache_is_separated_by_role(
     # Different roles must create different cache entries.
     assert mock_search.await_count == 2
     assert mock_generate.await_count == 2
+
+
+

@@ -191,6 +191,8 @@ async def ingest_document(
                 document_version_id=document_version.id,
                 chunk_index=chunk.chunk_index,
                 content=chunk.content,
+                section=getattr(chunk, "section", None),
+                page_number=getattr(chunk, "page_number", None),
                 year=year,
                 department=None,
                 access_level=access_level,

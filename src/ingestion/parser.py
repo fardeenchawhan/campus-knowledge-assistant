@@ -1,50 +1,3 @@
-# from pathlib import Path
-
-# from docling.document_converter import DocumentConverter
-
-
-# def extract_text(file_path: str) -> str:
-#     """
-#     Extract structured Markdown text from a document using Docling.
-#     """
-
-#     path = Path(file_path)
-
-#     if not path.exists():
-#         raise FileNotFoundError(f"File not found: {file_path}")
-
-#     converter = DocumentConverter()
-
-#     result = converter.convert(path)
-
-#     return result.document.export_to_markdown()
-
-
-# def extract_and_save(
-#     file_path: str,
-#     output_path: str,
-# ) -> Path:
-#     """
-#     Extract a document using Docling and save the
-#     resulting Markdown to disk.
-#     """
-
-#     text = extract_text(file_path)
-
-#     output = Path(output_path)
-
-#     output.parent.mkdir(
-#         parents=True,
-#         exist_ok=True,
-#     )
-
-#     output.write_text(
-#         text,
-#         encoding="utf-8",
-#     )
-
-#     return output
-
 from pathlib import Path
 
 from docling.document_converter import DocumentConverter
@@ -60,6 +13,8 @@ SUPPORTED_EXTENSIONS = {
     ".md",
     ".txt",
 }
+
+PAGE_BREAK_MARKER = "<!-- PAGE_BREAK -->"
 
 
 def validate_file_type(file_path: str) -> None:
@@ -86,19 +41,20 @@ def extract_text(file_path: str) -> str:
 
     extension = path.suffix.lower()
 
-    # Plain text files do not need Docling.
+    # Plain text files do not have Docling page provenance.
     if extension in {".txt", ".md"}:
         return path.read_text(
             encoding="utf-8",
             errors="replace",
         )
 
-    # Structured documents are processed by Docling.
     converter = DocumentConverter()
 
     result = converter.convert(path)
 
-    return result.document.export_to_markdown()
+    return result.document.export_to_markdown(
+        page_break_placeholder=PAGE_BREAK_MARKER,
+    )
 
 
 def extract_and_save(

@@ -12,6 +12,8 @@ class SourceResponse(BaseModel):
     source_number: int
     document: str
     version: int
+    page: int | None = None
+    section: str | None = None
     chunk_id: int
 
 
