@@ -9,14 +9,6 @@ def build_context(
     sources = []
 
     for index, chunk in enumerate(chunks, start=1):
-        print(
-        "DEBUG CHUNK:",
-        chunk.id,
-        "page=",
-        chunk.page_number,
-        "section=",
-        chunk.section,
-    )
 
         document_version = chunk.document_version
         document = document_version.document
