@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from pathlib import Path
 
 from sqlalchemy import select
@@ -6,12 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.models import UserRole
 from src.chunks.models import Chunk
 from src.documents.models import Document, DocumentVersion
+from src.core.config import settings
 from src.embeddings.service import generate_embeddings
-from src.ingestion.chunker import chunk_markdown
+from src.ingestion.chunker import (
+    chunk_markdown,
+    ensure_token_limit,
+)
 from src.ingestion.hash import calculate_file_hash
-import asyncio
-from pathlib import Path
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +160,25 @@ async def ingest_document(
 
     # Create chunks.
     chunks = chunk_markdown(text)
+
+    if settings.INFERENCE_MODE == "remote":
+        
+        from src.embeddings.remote import get_cohere_client
+
+        cohere_client = get_cohere_client()
+
+        def tokenize(content: str) -> list[int]:
+            response = cohere_client.tokenize(
+                text=content,
+                model=settings.COHERE_EMBEDDING_MODEL,
+            )
+            return response.tokens
+
+        chunks = ensure_token_limit(
+            chunks,
+            tokenize,
+            max_tokens=508,
+        )
 
 
     # Generate embeddings in batches.

@@ -184,3 +184,112 @@ def chunk_markdown(
             chunk_index += 1
 
     return chunks
+
+
+
+
+def split_chunk_by_token_limit(
+    chunk: TextChunk,
+    tokenize,
+    max_tokens: int = 508,
+) -> list[TextChunk]:
+
+    def token_count(text: str) -> int:
+        return len(tokenize(text))
+
+    if token_count(chunk.content) <= max_tokens:
+        return [chunk]
+
+    words = chunk.content.split()
+
+    pieces: list[str] = []
+    current_words: list[str] = []
+
+    for word in words:
+        candidate = (
+            f"{' '.join(current_words)} {word}"
+            if current_words
+            else word
+        )
+
+        if token_count(candidate) <= max_tokens:
+            current_words.append(word)
+            continue
+
+        # Save the current valid piece.
+        if current_words:
+            pieces.append(" ".join(current_words))
+            current_words = []
+
+        # Check whether this individual word is itself too large.
+        if token_count(word) <= max_tokens:
+            current_words = [word]
+            continue
+
+        # Extremely long token sequence:
+        # split it by characters until each piece fits.
+        current_piece = ""
+
+        for char in word:
+            candidate_piece = current_piece + char
+
+            if token_count(candidate_piece) <= max_tokens:
+                current_piece = candidate_piece
+            else:
+                if current_piece:
+                    pieces.append(current_piece)
+
+                current_piece = char
+
+        if current_piece:
+            current_words = [current_piece]
+
+    if current_words:
+        pieces.append(" ".join(current_words))
+
+    result = [
+        TextChunk(
+            chunk_index=chunk.chunk_index,
+            content=piece,
+            section=chunk.section,
+            page_number=chunk.page_number,
+        )
+        for piece in pieces
+    ]
+
+    # Final safety check.
+    for piece in result:
+        count = token_count(piece.content)
+        if count > max_tokens:
+            raise ValueError(
+                f"Token limit violation: "
+                f"{count} tokens > {max_tokens} "
+                f"for chunk {piece.chunk_index}"
+            )
+
+    return result
+
+
+
+
+def ensure_token_limit(
+    chunks: list[TextChunk],
+    tokenize,
+    max_tokens: int = 508,
+) -> list[TextChunk]:
+
+    safe_chunks: list[TextChunk] = []
+
+    for chunk in chunks:
+        safe_chunks.extend(
+            split_chunk_by_token_limit(
+                chunk,
+                tokenize,
+                max_tokens,
+            )
+        )
+
+    for index, chunk in enumerate(safe_chunks):
+        chunk.chunk_index = index
+
+    return safe_chunks

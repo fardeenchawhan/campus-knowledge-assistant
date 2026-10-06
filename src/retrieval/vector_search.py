@@ -1,13 +1,24 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.core.config import settings
 from src.chunks.models import Chunk
 from src.documents.models import DocumentVersion
 from src.embeddings.service import generate_embeddings
 from src.auth.rbac import get_allowed_access_levels
 from src.auth.models import UserRole
 
+
+def _generate_query_embedding(query: str) -> list[float]:
+    if settings.INFERENCE_MODE == "remote":
+        from src.embeddings.remote import generate_embeddings as remote_embed
+
+        return remote_embed(
+            [query],
+            input_type="search_query",
+        )[0]
+
+    return generate_embeddings([query])[0]
 
 async def vector_search(
     db: AsyncSession,
@@ -16,7 +27,7 @@ async def vector_search(
     top_k: int = 20,
 ) -> list[tuple[Chunk, float]]:
 
-    query_embedding = generate_embeddings([query])[0]
+    query_embedding = _generate_query_embedding(query)
 
     allowed_access_levels = get_allowed_access_levels(role)
 

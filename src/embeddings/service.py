@@ -1,109 +1,55 @@
-# from sentence_transformers import SentenceTransformer, CrossEncoder
+from src.core.config import settings
 
 
-# EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-# RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+def generate_embeddings(texts: list[str]) -> list[list[float]]:
+    """
+    Generate document embeddings.
 
+    The public interface intentionally remains simple so existing
+    ingestion code and tests do not need to know which provider is used.
+    """
+    if settings.INFERENCE_MODE == "remote":
+        from src.embeddings.remote import generate_embeddings as remote_embed
 
-# embedding_model = SentenceTransformer(
-#     EMBEDDING_MODEL_NAME
-# )
-
-# reranker_model = CrossEncoder(
-#     RERANKER_MODEL_NAME
-# )
-
-
-# def generate_embeddings(
-#     texts: list[str],
-# ) -> list[list[float]]:
-
-#     embeddings = embedding_model.encode(
-#         texts,
-#         batch_size=32,
-#         show_progress_bar=True,
-#         normalize_embeddings=True,
-#     )
-
-#     return embeddings.tolist()
-
-
-# def rerank(
-#     query: str,
-#     texts: list[str],
-# ) -> list[float]:
-
-#     pairs = [
-#         [query, text]
-#         for text in texts
-#     ]
-
-#     scores = reranker_model.predict(pairs)
-
-#     return scores.tolist()
-
-
-from sentence_transformers import SentenceTransformer, CrossEncoder
-
-
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-RERANKER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-
-
-_embedding_model = None
-_reranker_model = None
-
-
-def get_embedding_model() -> SentenceTransformer:
-    global _embedding_model
-
-    if _embedding_model is None:
-        _embedding_model = SentenceTransformer(
-            EMBEDDING_MODEL_NAME
+        return remote_embed(
+            texts,
+            input_type="search_document",
         )
 
-    return _embedding_model
+    from src.embeddings.local import generate_embeddings as local_embed
+
+    return local_embed(texts)
 
 
-def get_reranker_model() -> CrossEncoder:
-    global _reranker_model
+def generate_query_embedding(query: str) -> list[float]:
+    """
+    Generate an embedding specifically for a search query.
+    """
+    if settings.INFERENCE_MODE == "remote":
+        from src.embeddings.remote import generate_embeddings as remote_embed
 
-    if _reranker_model is None:
-        _reranker_model = CrossEncoder(
-            RERANKER_MODEL_NAME
+        return remote_embed(
+            [query],
+            input_type="search_query",
+        )[0]
+
+    from src.embeddings.local import generate_embeddings as local_embed
+
+    return local_embed([query])[0]
+
+
+def rerank(query: str, texts: list[str]) -> list[float]:
+    if settings.INFERENCE_MODE == "remote":
+        from src.embeddings.remote import rerank as remote_rerank
+
+        return remote_rerank(
+            query=query,
+            texts=texts,
         )
 
-    return _reranker_model
+    from src.embeddings.local import rerank as local_rerank
 
-
-def generate_embeddings(
-    texts: list[str],
-) -> list[list[float]]:
-
-    embedding_model = get_embedding_model()
-
-    embeddings = embedding_model.encode(
-        texts,
-        batch_size=32,
-        show_progress_bar=True,
-        normalize_embeddings=True,
+    return local_rerank(
+        query=query,
+        texts=texts,
     )
-
-    return embeddings.tolist()
-
-
-def rerank(
-    query: str,
-    texts: list[str],
-) -> list[float]:
-
-    reranker_model = get_reranker_model()
-
-    pairs = [
-        [query, text]
-        for text in texts
-    ]
-
-    scores = reranker_model.predict(pairs)
-
-    return scores.tolist()

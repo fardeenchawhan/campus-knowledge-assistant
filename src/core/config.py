@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY:str
     JWT_ALGORITHM:str
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES:int
-
     ADMIN_NAME:str
     ADMIN_EMAIL:str
     ADMIN_PASSWORD:str
@@ -18,6 +17,14 @@ class Settings(BaseSettings):
     REDIS_URL: str
 
     MAX_UPLOAD_SIZE_MB: int
+
+    INFERENCE_MODE: str = "local"
+
+    COHERE_API_KEY: str | None = None
+
+    COHERE_EMBEDDING_MODEL: str = "embed-english-light-v3.0"
+
+    COHERE_RERANKER_MODEL: str = "rerank-english-v3.0"
 
 
 
