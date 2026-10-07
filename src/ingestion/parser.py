@@ -30,6 +30,7 @@ def validate_file_type(file_path: str) -> None:
 
 
 def extract_text(file_path: str) -> str:
+    from docling.document_converter import DocumentConverter
     path = Path(file_path)
 
     if not path.exists():

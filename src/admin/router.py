@@ -34,8 +34,6 @@ from src.auth.rbac import require_roles
 from src.core.config import settings
 from src.core.database import get_db
 from src.documents.models import Document, DocumentVersion
-from src.ingestion.parser import extract_and_save
-from src.ingestion.service import ingest_document
 
 SUPPORTED_UPLOAD_EXTENSIONS = {
     ".pdf",
