@@ -6,11 +6,19 @@ from src.core.database import get_db
 from src.auth.router import router as auth_router
 from src.rag.router import router as rag_router
 from src.admin.router import router as admin_router
-
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(
     title="Campus Knowledge Assistant",
     description="Production-oriented RAG API for university knowledge.",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth_router)
