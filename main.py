@@ -7,8 +7,6 @@ from src.auth.router import router as auth_router
 from src.rag.router import router as rag_router
 from src.admin.router import router as admin_router
 
-
-
 app = FastAPI(
     title="Campus Knowledge Assistant",
     description="Production-oriented RAG API for university knowledge.",
