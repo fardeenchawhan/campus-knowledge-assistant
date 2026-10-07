@@ -70,6 +70,12 @@ async def process_document_job(
             progress=10,
             message="Extracting document content...",
         )
+        
+        logger.info(
+            "Document job %s: starting extraction for %s",
+            job_id,
+            file_path,
+        )
 
         # Docling is synchronous and potentially CPU-heavy,
         # so run it outside the async event loop.
@@ -77,6 +83,12 @@ async def process_document_job(
         await asyncio.to_thread(
             extract_and_save,
             file_path,
+            markdown_path,
+        )
+
+        logger.info(
+            "Document job %s: extraction finished. Markdown: %s",
+            job_id,
             markdown_path,
         )
 
