@@ -2,15 +2,25 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from src.auth.bootstrap import create_admin
 from src.core.database import get_db
 from src.auth.router import router as auth_router
 from src.rag.router import router as rag_router
 from src.admin.router import router as admin_router
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_admin()
+    yield
+
+
 app = FastAPI(
     title="Campus Knowledge Assistant",
     description="Production-oriented RAG API for university knowledge.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
