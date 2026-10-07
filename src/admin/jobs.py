@@ -4,7 +4,6 @@ from pathlib import Path
 import logging
 from src.core.database import AsyncSessionLocal
 from src.core.redis import redis_client
-from src.ingestion.parser import extract_and_save
 from src.ingestion.service import ingest_document
 from src.ingestion.hash import calculate_file_hash
 
@@ -74,6 +73,7 @@ async def process_document_job(
 
         # Docling is synchronous and potentially CPU-heavy,
         # so run it outside the async event loop.
+        from src.ingestion.parser import extract_and_save
         await asyncio.to_thread(
             extract_and_save,
             file_path,

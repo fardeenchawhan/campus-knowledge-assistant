@@ -1,7 +1,7 @@
 from sqlalchemy import select
 import asyncio
 from src.auth.models import User,UserRole
-from src.core.database import AsyncSession, AsyncSessionLocal,get_db
+from src.core.database import AsyncSessionLocal
 from src.core.config import settings
 from src.auth.security import hash_password
 
